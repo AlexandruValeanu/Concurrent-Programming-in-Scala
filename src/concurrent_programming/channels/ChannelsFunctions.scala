@@ -2,6 +2,8 @@ package concurrent_programming.channels
 
 import io.threadcso._
 
+import scala.util.Random
+
 object ChannelsFunctions {
   def copy[T](in: ?[T], out: ![T]): PROC = proc{
     repeat{
@@ -205,7 +207,8 @@ object ChannelsFunctions {
   }
 
   def simpleExchanger(l: ?[Int], r: ?[Int], lo: ![Int], hi: ![Int]): PROC = proc{
-    var x, y = 0
+    var x: Int = 0
+    var y: Int = 0
 
     repeat{
       run(proc{x = l?()} || proc{y = r?()})
@@ -284,7 +287,7 @@ object ChannelsFunctions {
     out.closeOut()
   }
 
-  def untilZero(in: ?[Long], out: ![Long]): PROC = proc{
+  def untilZero[T : Numeric](in: ?[T], out: ![T]): PROC = proc{
     var finished = false
 
     repeat(!finished){
@@ -297,6 +300,24 @@ object ChannelsFunctions {
     }
 
     in.closeIn()
+    out.closeOut()
+  }
+
+  def same[T](v: T)(out: ![T]): PROC = proc{
+    repeat{
+      out!v
+    }
+
+    out.closeOut()
+  }
+
+  def randomStreamInt(out: ![Int]): PROC = proc{
+    val random = new Random()
+
+    repeat{
+      out!random.nextInt()
+    }
+
     out.closeOut()
   }
 }
