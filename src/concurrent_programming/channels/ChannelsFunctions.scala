@@ -15,5 +15,6 @@ object ChannelsFunctions {
     while (true){
       println(in?())
     }
+    in.closeIn()
   }
 }
