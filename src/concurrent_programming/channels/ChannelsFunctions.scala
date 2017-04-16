@@ -8,13 +8,16 @@ object ChannelsFunctions {
       val x = in?()
       out!x
     }
-    in.closeIn(); out.closeOut()
+
+    in.closeIn()
+    out.closeOut()
   }
 
   def console[T](in: ?[T]): PROC = proc{
     repeat{
       println(in?())
     }
+
     in.closeIn()
   }
 
@@ -23,15 +26,18 @@ object ChannelsFunctions {
       println(in?())
       sleep(300 * milliSec)
     }
+
     in.closeIn()
   }
 
   def nats(out: ![Int]): PROC = proc{
     var n = 0
+
     repeat{
       out!n
       n += 1
     }
+
     out.closeOut()
   }
 
@@ -40,7 +46,9 @@ object ChannelsFunctions {
       out!(in?())
       val _ = in?()
     }
-    in.closeIn(); out.closeOut()
+
+    in.closeIn()
+    out.closeOut()
   }
 
   def tee[T](in: ?[T], out1: ![T], out2: ![T]): PROC = proc{
@@ -49,6 +57,7 @@ object ChannelsFunctions {
       val v = in?()
       run(proc{out1!v} || proc{out2!v})
     }
+
     in.closeIn()
     out1.closeOut(); out2.closeOut()
   }
@@ -63,6 +72,7 @@ object ChannelsFunctions {
       same = l == r
       ans!(same && ln == rn)
     }
+
     inl.closeIn(); inr.closeIn()
     ans.closeOut()
   }
@@ -104,7 +114,8 @@ object ChannelsFunctions {
       }
     }
 
-    inl.closeIn(); inr.closeIn(); out.closeOut()
+    inl.closeIn(); inr.closeIn()
+    out.closeOut()
   }
 
   def merge(inl: ?[Int], inr: ?[Int], out: ![Int]): PROC = proc("merge"){
@@ -134,7 +145,8 @@ object ChannelsFunctions {
       }
     }
 
-    inl.closeIn(); inr.closeIn(); out.closeOut()
+    inl.closeIn(); inr.closeIn()
+    out.closeOut()
   }
 
   def zipWith[U, V, T](f: (U, V) => T)(inl: ?[U], inr: ?[V], out: ![T]): PROC = proc{
@@ -154,11 +166,76 @@ object ChannelsFunctions {
     repeat{
       out! f(in ? ())
     }
-    in.closeIn(); out.closeOut()
+
+    in.closeIn()
+    out.closeOut()
   }
 
   def prefix[T](v: T)(in: ?[T], out: ![T]): PROC = proc{
     attempt{out!v; repeat{out!(in?())}}{}
-    in.closeIn(); out.closeOut()
+
+    in.closeIn()
+    out.closeOut()
+  }
+
+  def unzip[U, V](in: ?[(U, V)], l: ![U], r: ![V]): PROC = proc{
+    repeat{
+      val (x, y) = in?()
+      run(proc{l!x} || proc{r!y})
+    }
+
+    in.closeIn()
+    l.closeOut(); r.closeOut()
+  }
+
+  def simpleExchanger(l: ?[Int], r: ?[Int], lo: ![Int], hi: ![Int]): PROC = proc{
+    var x, y = 0
+
+    repeat{
+      run(proc{x = l?()} || proc{y = r?()})
+
+      if (x > y){
+        val t = x
+        x = y
+        y = t
+      }
+
+      run(proc{lo!x} || proc{hi!y})
+    }
+
+    l.closeIn(); r.closeIn()
+    lo.closeOut(); hi.closeOut()
+  }
+
+  def smartExchanger(l: ?[Int], r: ?[Int], lo: ![Int], hi: ![Int]): PROC = proc{
+    val tmp = OneOne[(Int, Int)]
+    run(zipWith((x: Int, y: Int) => if (x <= y) (x, y) else (y, x))(l, r, tmp) ||
+        unzip(tmp, lo, hi))
+  }
+
+  def drop[T](n: Int)(in: ?[Int], out: ![Int]): PROC = proc{
+    attempt{
+      for (i <- 0.until(n))
+        in?()
+    }{}
+
+    repeat{
+      out!(in?())
+    }
+
+    in.closeIn()
+    out.closeOut()
+  }
+
+  def take[T](n: Int)(in: ?[Int], out: ![Int]): PROC = proc{
+    var k = n
+
+    repeat(k > 0){
+      out!(in?())
+      k -= 1
+    }
+
+    in.closeIn()
+    out.closeOut()
   }
 }
