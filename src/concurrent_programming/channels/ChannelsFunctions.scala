@@ -51,15 +51,23 @@ object ChannelsFunctions {
     out.closeOut()
   }
 
-  def tee[T](in: ?[T], out1: ![T], out2: ![T]): PROC = proc{
+  def tee[T](in: ?[T], outs: ![T]*): PROC = proc{
     // deadlock-free design of tee
     repeat{
       val v = in?()
-      run(proc{out1!v} || proc{out2!v})
+
+      var system = proc{}
+
+      for (out <- outs)
+        system = system || proc{out!v}
+
+      run(system)
     }
 
     in.closeIn()
-    out1.closeOut(); out2.closeOut()
+
+    for (out <- outs)
+      out.closeOut()
   }
 
   def equal[T](inl: ?[T], inr: ?[T], ans: ![Boolean]): PROC = proc{
@@ -171,8 +179,16 @@ object ChannelsFunctions {
     out.closeOut()
   }
 
-  def prefix[T](v: T)(in: ?[T], out: ![T]): PROC = proc{
-    attempt{out!v; repeat{out!(in?())}}{}
+  def prefix[T](vs: T*)(in: ?[T], out: ![T]): PROC = proc{
+    attempt{
+      for (v <- vs)
+        out!v
+
+      repeat{
+        out!(in?())
+      }
+    }{}
+
 
     in.closeIn()
     out.closeOut()
@@ -213,11 +229,13 @@ object ChannelsFunctions {
         unzip(tmp, lo, hi))
   }
 
-  def drop[T](n: Int)(in: ?[Int], out: ![Int]): PROC = proc{
-    attempt{
-      for (i <- 0.until(n))
-        in?()
-    }{}
+  def drop[T](n: Int)(in: ?[T], out: ![T]): PROC = proc{
+    var k = n
+
+    repeat(k > 0){
+      in?()
+      k -= 1
+    }
 
     repeat{
       out!(in?())
@@ -227,12 +245,55 @@ object ChannelsFunctions {
     out.closeOut()
   }
 
-  def take[T](n: Int)(in: ?[Int], out: ![Int]): PROC = proc{
+  def take[T](n: Int)(in: ?[T], out: ![T]): PROC = proc{
     var k = n
 
     repeat(k > 0){
       out!(in?())
       k -= 1
+    }
+
+    in.closeIn()
+    out.closeOut()
+  }
+
+  def tail[T](in: ?[T], out: ![T]): PROC = proc{
+    attempt{
+      in?()
+
+      repeat{
+        out!(in?())
+      }
+    }{}
+
+    in.closeIn()
+    out.closeOut()
+  }
+
+  def takeWhile[T](f: T => Boolean)(in: ?[T], out: ![T]): PROC = proc{
+    repeat{
+      val v = in?()
+
+      if (!f(v))
+        stop
+
+      out!v
+    }
+
+    in.closeIn()
+    out.closeOut()
+  }
+
+  def untilZero(in: ?[Long], out: ![Long]): PROC = proc{
+    var finished = false
+
+    repeat(!finished){
+      val v = in?()
+
+      if (v == 0)
+        finished = true
+      else
+        out!v
     }
 
     in.closeIn()
