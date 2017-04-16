@@ -17,4 +17,13 @@ object ChannelsFunctions {
     }
     in.closeIn()
   }
+
+  def nats(out: ![Int]): PROC = proc{
+    var n = 0
+    while (true){
+      out!n
+      n += 1
+    }
+    out.closeOut()
+  }
 }
