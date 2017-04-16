@@ -1,6 +1,6 @@
 package concurrent_programming.data_parallel.smoothing
 
-object Main {
+object SmoothMain {
   def main(args: Array[String]): Unit = {
     val N = 10
     val M = 10
