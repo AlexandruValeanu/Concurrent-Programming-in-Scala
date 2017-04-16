@@ -1,10 +1,10 @@
 package concurrent_programming.channels
 
-import io.threadcso.{!, ?, PROC, proc}
+import io.threadcso._
 
 object ChannelsFunctions {
   def copy[T](in: ?[T], out: ![T]): PROC = proc{
-    while (true){
+    repeat{
       val x = in?()
       out!x
     }
@@ -12,18 +12,153 @@ object ChannelsFunctions {
   }
 
   def console[T](in: ?[T]): PROC = proc{
-    while (true){
+    repeat{
       println(in?())
+    }
+    in.closeIn()
+  }
+
+  def slowConsole[T](in: ?[T]): PROC = proc{
+    repeat{
+      println(in?())
+      sleep(300 * milliSec)
     }
     in.closeIn()
   }
 
   def nats(out: ![Int]): PROC = proc{
     var n = 0
-    while (true){
+    repeat{
       out!n
       n += 1
     }
     out.closeOut()
+  }
+
+  def alts[T](in: ?[T], out: ![T]): PROC = proc{
+    repeat{
+      out!(in?())
+      val _ = in?()
+    }
+    in.closeIn(); out.closeOut()
+  }
+
+  def tee[T](in: ?[T], out1: ![T], out2: ![T]): PROC = proc{
+    // deadlock-free design of tee
+    repeat{
+      val v = in?()
+      run(proc{out1!v} || proc{out2!v})
+    }
+    in.closeIn()
+    out1.closeOut(); out2.closeOut()
+  }
+
+  def equal[T](inl: ?[T], inr: ?[T], ans: ![Boolean]): PROC = proc{
+    var l, r = inl.nothing
+    var ln, rn = 0
+    var same = true
+
+    repeat(same){
+      run(proc{l = inl?(); ln += 1} || proc{r = inr?(); rn += 1})
+      same = l == r
+      ans!(same && ln == rn)
+    }
+    inl.closeIn(); inr.closeIn()
+    ans.closeOut()
+  }
+
+  def sorted_merge(inl: ?[Int], inr: ?[Int], out: ![Int]): PROC = proc("sorted-merge"){
+    var l = inl.nothing
+    var r = inr.nothing
+
+    repeat{
+      (proc{if (l == inl.nothing) l = inl?()} ||
+        proc{if (r == inr.nothing) r = inr?()})()
+
+      if (l == r){
+        out!l
+        l = inl.nothing
+        r = inr.nothing
+      }
+      else if (l < r){
+        out!l
+        l = inl.nothing
+      }
+      else{
+        out!r
+        r = inr.nothing
+      }
+    }
+
+    if (l != inl.nothing){
+      repeat{
+        out!l
+        l = inl?()
+      }
+    }
+
+    if (r != inr.nothing){
+      repeat{
+        out!r
+        r = inr?()
+      }
+    }
+
+    inl.closeIn(); inr.closeIn(); out.closeOut()
+  }
+
+  def merge(inl: ?[Int], inr: ?[Int], out: ![Int]): PROC = proc("merge"){
+    var l = inl.nothing
+    var r = inr.nothing
+
+    repeat{
+      (proc{if (l == inl.nothing) l = inl?()} ||
+        proc{if (r == inr.nothing) r = inr?()})()
+
+      run(proc{out!l} || proc{out!r})
+      l = inl.nothing
+      r = inr.nothing
+    }
+
+    if (l != inl.nothing){
+      repeat{
+        out!l
+        l = inl?()
+      }
+    }
+
+    if (r != inr.nothing){
+      repeat{
+        out!r
+        r = inr?()
+      }
+    }
+
+    inl.closeIn(); inr.closeIn(); out.closeOut()
+  }
+
+  def zipWith[U, V, T](f: (U, V) => T)(inl: ?[U], inr: ?[V], out: ![T]): PROC = proc{
+    var l = inl.nothing
+    var r = inr.nothing
+
+    repeat{
+      run(proc{l = inl?()} || proc{r = inr?()})
+      out!f(l, r)
+    }
+
+    inl.closeIn(); inr.closeIn()
+    out.closeOut()
+  }
+
+  def map[U, V](f: U => V)(in: ?[U], out: ![V]): PROC = proc{
+    repeat{
+      out! f(in ? ())
+    }
+    in.closeIn(); out.closeOut()
+  }
+
+  def prefix[T](v: T)(in: ?[T], out: ![T]): PROC = proc{
+    attempt{out!v; repeat{out!(in?())}}{}
+    in.closeIn(); out.closeOut()
   }
 }
