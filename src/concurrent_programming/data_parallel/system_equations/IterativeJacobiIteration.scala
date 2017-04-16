@@ -1,12 +1,12 @@
 package concurrent_programming.data_parallel.system_equations
 
 class IterativeJacobiIteration(A: MatrixUtils.Matrix, b: MatrixUtils.Vector){
-  private val N = MatrixUtils.getRows(A)
+  val N = MatrixUtils.getRows(A)
   private val x = MatrixUtils.getNullVector(N)
   private val tmpX = MatrixUtils.getNullVector(N)
 
-  private val EPSILON: Double = 0.00000001
-  private val MAX_ROUNDS = 100
+  val EPSILON: Double = 0.00000001
+  var MAX_ROUNDS = 100
 
   private def iteration(): Boolean ={
     for (i <- 0.until(N)){
