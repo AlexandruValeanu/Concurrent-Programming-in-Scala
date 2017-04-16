@@ -320,4 +320,14 @@ object ChannelsFunctions {
 
     out.closeOut()
   }
+
+  def randomStreamDouble(out: ![Double]): PROC = proc{
+    val random = new Random()
+
+    repeat{
+      out!random.nextDouble()
+    }
+
+    out.closeOut()
+  }
 }
