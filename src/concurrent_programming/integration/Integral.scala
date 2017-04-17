@@ -62,12 +62,17 @@ object Integral {
     workers || controller(f, a, b, n, numberWorkers, toWorkers, toController)
   }
 
-  def sequentialComputation(f: Function, a: Double, b: Double): Unit ={
-    printf("Result: %f\n", integral(f, a, b, 100, (b - a) / 100.0))
+  def sequentialComputation(f: Function, a: Double, b: Double, numberIntervals: Int = 10000): Unit ={
+    printf("Result: %f\n", integral(f, a, b, numberIntervals, (b - a) / numberIntervals))
   }
 
-  def parallelComputation(f: Function, a: Double, b: Double): Unit ={
-    run(system(f, a, b, 100, 10))
+  def parallelComputation(f: Function, a: Double, b: Double, numberIntervals: Int = 10000): Unit ={
+    var nworkers = Math.min(20, numberIntervals)
+
+    while (numberIntervals % nworkers != 0)
+      nworkers += 1
+
+    run(system(f, a, b, numberIntervals, nworkers))
   }
 
   def integral(f: Function, a: Double, b: Double, taskSize: Int, delta: Double): Double = {
