@@ -8,7 +8,7 @@ import scala.util.Random
   In this protocol, each client node sends its value to a central node,
   which calculates the minimum and maximum, and sends those back.
  */
-object CentralizedPattern extends Runnable{
+object CentralizedProtocol extends Runnable{
   type IntPair = (Int, Int)
   private val toController = ManyOne[Int]
   private val fromController = OneMany[IntPair]
@@ -42,14 +42,14 @@ object CentralizedPattern extends Runnable{
       max = Math.max(max, w)
     }
 
-    printf("Controller ends with values " + (min, max))
+    println("Controller ends with values " + (min, max))
 
     for (_ <- 1.until(N))
       out!(min, max)
   }
 
   override def run(): Unit = {
-    val clients = || (for (i <- 0.until(N)) yield client(i, fromController, toController))
+    val clients = || (for (i <- 1.until(N)) yield client(i, fromController, toController))
     (controller(toController, fromController) || clients)()
   }
 }

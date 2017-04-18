@@ -3,7 +3,7 @@ package concurrent_programming.peers
 import io.threadcso._
 import scala.util.Random
 
-object SymmetricPattern extends Runnable{
+object SymmetricProtocol extends Runnable{
   private val random = new Random()
   val N = 10
 
@@ -12,7 +12,7 @@ object SymmetricPattern extends Runnable{
   private def node(me: Int, in: ?[Int], toNode: Seq[![Int]]): PROC = proc{
     // Choose value randomly
     val v = random.nextInt(100)
-    printf("Client %d chose %d\n", me, v)
+    printf("Node %d chose %d\n", me, v)
 
     // Process to distribute value to all other nodes
     def sender(): PROC = proc{
