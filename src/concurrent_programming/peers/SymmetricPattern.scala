@@ -16,9 +16,8 @@ object SymmetricPattern extends Runnable{
 
     // Process to distribute value to all other nodes
     def sender(): PROC = proc{
-      for (i <- 0.until(N))
-        if (i != me)
-          toNode(i)!v
+      for (i <- 1.until(N))
+          toNode((i + me) % N)!v // longest chain is of length N - 1.
     }
 
     // Process to receive values from other nodes, and calculate min and max
