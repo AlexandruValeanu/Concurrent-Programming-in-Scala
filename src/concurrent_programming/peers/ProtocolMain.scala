@@ -6,5 +6,6 @@ object ProtocolMain {
     SymmetricProtocol.run()
     TwiceRing.run()
     MultiRing.run()
+    TreeProtocol.run()
   }
 }
